@@ -12,10 +12,12 @@
         // https://github.com/imulus/retinajs/issues/8
         force_original_dimensions: true,
         
-        // Option for choose which image to load
-        // Default is load all retina images without attr data-no-retina
-        // Provide second option for load only images with attr data-at2x (for manual) and attr data-retina-true for automate find retina images
-        retina_mode: 2, // 2 for secondary option
+        // use whitelist mode
+        // By default all images without attr data-no-retina are converted
+        // whitelist mode only converts images with attr data-retina
+        // can be controlled by setting the data-retina-mode attribute on the 
+        // <body> tag
+        mode: 'default', 
     };
 
     function Retina() {}
@@ -42,18 +44,20 @@
         var existing_onload = context.onload || function(){};
 
         context.onload = function() {
+			if(document.body.getAttribute('data-retina-mode')){
+				config.mode = document.body.getAttribute('data-retina-mode');
+			}
             var images = document.getElementsByTagName('img'), retinaImages = [], i, image;
             for (i = 0; i < images.length; i += 1) {
                 image = images[i];
-                if( config.retina_mode == 1 ) {
-                    if (!!!image.getAttributeNode('data-no-retina')) {
-                        retinaImages.push(new RetinaImage(image));
-                    } 
-                }
-                else if (config.retina_mode == 2 ) {
-                    if (image.getAttributeNode('data-retina-true') || image.getAttributeNode('data-at2x')) {
+                if( config.mode == "whitelist" ) {
+                    if (image.getAttributeNode('data-retina')) {
                         retinaImages.push(new RetinaImage(image));
                     }
+                } else {
+					if (!!!image.getAttributeNode('data-no-retina')) {
+                        retinaImages.push(new RetinaImage(image));
+                    } 
                 }
             }
             existing_onload();
@@ -104,15 +108,9 @@
 
     RetinaImagePath.confirmed_paths = [];
 
-    RetinaImagePath.prototype.is_external = function() {
-        return !!(this.path.match(/^https?\:/i) && !this.path.match('//' + document.domain) );
-    };
-
     RetinaImagePath.prototype.check_2x_variant = function(callback) {
         var http, that = this;
-        if (this.is_external()) {
-            return callback(false);
-        } else if (!this.perform_check && typeof this.at_2x_path !== 'undefined' && this.at_2x_path !== null) {
+		if (!this.perform_check && typeof this.at_2x_path !== 'undefined' && this.at_2x_path !== null) {
             return callback(true);
         } else if (this.at_2x_path in RetinaImagePath.confirmed_paths) {
             return callback(true);
