@@ -17,7 +17,7 @@
         // whitelist mode only converts images with attr data-retina
         // can be controlled by setting the data-retina-mode attribute on the 
         // <body> tag
-        mode: 'default', 
+        mode: 'default'
     };
 
     function Retina() {}
@@ -50,7 +50,7 @@
             var images = document.getElementsByTagName('img'), retinaImages = [], i, image;
             for (i = 0; i < images.length; i += 1) {
                 image = images[i];
-                if( config.mode == "whitelist" ) {
+                if( config.mode === 'whitelist' ) {
                     if (image.getAttributeNode('data-retina')) {
                         retinaImages.push(new RetinaImage(image));
                     }

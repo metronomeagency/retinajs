@@ -1,7 +1,7 @@
 /*!
  * Retina.js v1.3.0
  *
- * Copyright 2014 Imulus, LLC
+ * Copyright 2016 Imulus, LLC
  * Released under the MIT license
  *
  * Retina.js is an open source script that makes it easy to serve
@@ -20,7 +20,14 @@
 
         // Resize high-resolution images to original image's pixel dimensions
         // https://github.com/imulus/retinajs/issues/8
-        force_original_dimensions: true
+        force_original_dimensions: true,
+        
+        // use whitelist mode
+        // By default all images without attr data-no-retina are converted
+        // whitelist mode only converts images with attr data-retina
+        // can be controlled by setting the data-retina-mode attribute on the 
+        // <body> tag
+        mode: 'default'
     };
 
     function Retina() {}
@@ -47,11 +54,20 @@
         var existing_onload = context.onload || function(){};
 
         context.onload = function() {
+			if(document.body.getAttribute('data-retina-mode')){
+				config.mode = document.body.getAttribute('data-retina-mode');
+			}
             var images = document.getElementsByTagName('img'), retinaImages = [], i, image;
             for (i = 0; i < images.length; i += 1) {
                 image = images[i];
-                if (!!!image.getAttributeNode('data-no-retina')) {
-                    retinaImages.push(new RetinaImage(image));
+                if( config.mode === 'whitelist' ) {
+                    if (image.getAttributeNode('data-retina')) {
+                        retinaImages.push(new RetinaImage(image));
+                    }
+                } else {
+					if (!!!image.getAttributeNode('data-no-retina')) {
+                        retinaImages.push(new RetinaImage(image));
+                    } 
                 }
             }
             existing_onload();
@@ -102,15 +118,9 @@
 
     RetinaImagePath.confirmed_paths = [];
 
-    RetinaImagePath.prototype.is_external = function() {
-        return !!(this.path.match(/^https?\:/i) && !this.path.match('//' + document.domain) );
-    };
-
     RetinaImagePath.prototype.check_2x_variant = function(callback) {
         var http, that = this;
-        if (this.is_external()) {
-            return callback(false);
-        } else if (!this.perform_check && typeof this.at_2x_path !== 'undefined' && this.at_2x_path !== null) {
+		if (!this.perform_check && typeof this.at_2x_path !== 'undefined' && this.at_2x_path !== null) {
             return callback(true);
         } else if (this.at_2x_path in RetinaImagePath.confirmed_paths) {
             return callback(true);
